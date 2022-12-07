@@ -1,10 +1,11 @@
 // RUN: %clangxx -fsycl -fsycl-targets=%sycl_triple %s -o %t.out
-// RUN: env SYCL_RT_WARNING_LEVEL=1 %CPU_RUN_PLACEHOLDER %t.out 2>&1 | FileCheck %s
+// RUN: %CPU_RUN_PLACEHOLDER %t.out
+// RUN: %GPU_RUN_PLACEHOLDER %t.out
 // UNSUPPORTED: cuda || hip
 // REQUIRES: fusion
 
-// Test fusion cancellation on queue::wait() happening before
-// complete_fusion.
+// Test complete fusion with local internalization specified on the
+// accessors.
 
 #include <sycl/sycl.hpp>
 
@@ -37,29 +38,29 @@ int main() {
     assert(fw.is_in_fusion_mode() && "Queue should be in fusion mode");
 
     q.submit([&](handler &cgh) {
-      auto accIn1 = bIn1.get_access<access::mode::read>(cgh);
-      auto accIn2 = bIn2.get_access<access::mode::read>(cgh);
-      auto accTmp = bTmp.get_access(cgh);
+      auto accIn1 = bIn1.get_access(cgh);
+      auto accIn2 = bIn2.get_access(cgh);
+      auto accTmp = bTmp.get_access(
+          cgh, sycl::ext::codeplay::experimental::property::promote_local{});
       cgh.parallel_for<class KernelOne>(
-          dataSize, [=](id<1> i) { accTmp[i] = accIn1[i] + accIn2[i]; });
+          nd_range<1>{{dataSize}, {16}},
+          [=](id<1> i) { accTmp[i] = accIn1[i] + accIn2[i]; });
     });
 
     q.submit([&](handler &cgh) {
-      auto accTmp = bTmp.get_access(cgh);
+      auto accTmp = bTmp.get_access(
+          cgh, sycl::ext::codeplay::experimental::property::promote_local{});
       auto accIn3 = bIn3.get_access(cgh);
       auto accOut = bOut.get_access(cgh);
       cgh.parallel_for<class KernelTwo>(
-          dataSize, [=](id<1> i) { accOut[i] = accTmp[i] * accIn3[i]; });
+          nd_range<1>{{dataSize}, {16}},
+          [=](id<1> i) { accOut[i] = accTmp[i] * accIn3[i]; });
     });
 
-    // This queue.wait() causes a blocking wait for all of the kernels in the
-    // fusion list. This should lead to cancellation of the fusion.
-    q.wait();
+    fw.complete_fusion({ext::codeplay::experimental::property::no_barriers{}});
 
     assert(!fw.is_in_fusion_mode() &&
            "Queue should not be in fusion mode anymore");
-
-    fw.complete_fusion({ext::codeplay::experimental::property::no_barriers{}});
   }
 
   // Check the results
@@ -69,5 +70,3 @@ int main() {
 
   return 0;
 }
-
-// CHECK: WARNING: Aborting fusion because synchronization with one of the kernels in the fusion list was requested

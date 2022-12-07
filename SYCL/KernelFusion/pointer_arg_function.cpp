@@ -1,14 +1,23 @@
 // RUN: %clangxx -fsycl -fsycl-targets=%sycl_triple %s -o %t.out
-// RUN: env SYCL_RT_WARNING_LEVEL=1 %CPU_RUN_PLACEHOLDER %t.out 2>&1 | FileCheck %s
+// RUN: %CPU_RUN_PLACEHOLDER %t.out
 // UNSUPPORTED: cuda || hip
 // REQUIRES: fusion
+// This test currently fails because InferAddressSpace is not able to remove all
+// address-space casts, causing internalization to fail.
+// XFAIL: *
 
-// Test fusion cancellation on queue::wait() happening before
-// complete_fusion.
+// Test complete fusion with private internalization specified on the
+// accessors, calling a function with a raw pointer taken from an accessor in
+// one of the kernels.
 
 #include <sycl/sycl.hpp>
 
 using namespace sycl;
+
+void __attribute__((noinline))
+addFunc(int *in1, int *in2, int *out, size_t linearID) {
+  out[linearID] = in1[linearID] + in2[linearID];
+}
 
 int main() {
   constexpr size_t dataSize = 512;
@@ -37,37 +46,36 @@ int main() {
     assert(fw.is_in_fusion_mode() && "Queue should be in fusion mode");
 
     q.submit([&](handler &cgh) {
-      auto accIn1 = bIn1.get_access<access::mode::read>(cgh);
-      auto accIn2 = bIn2.get_access<access::mode::read>(cgh);
-      auto accTmp = bTmp.get_access(cgh);
-      cgh.parallel_for<class KernelOne>(
-          dataSize, [=](id<1> i) { accTmp[i] = accIn1[i] + accIn2[i]; });
+      auto accIn1 = bIn1.get_access(cgh);
+      auto accIn2 = bIn2.get_access(cgh);
+      auto accTmp = bTmp.get_access(
+          cgh, sycl::ext::codeplay::experimental::property::promote_private{});
+      cgh.parallel_for<class KernelOne>(dataSize, [=](item<1> i) {
+        addFunc(accIn1.get_pointer(), accIn2.get_pointer(),
+                accTmp.get_pointer(), i.get_linear_id());
+      });
     });
 
     q.submit([&](handler &cgh) {
-      auto accTmp = bTmp.get_access(cgh);
+      auto accTmp = bTmp.get_access(
+          cgh, sycl::ext::codeplay::experimental::property::promote_private{});
       auto accIn3 = bIn3.get_access(cgh);
       auto accOut = bOut.get_access(cgh);
       cgh.parallel_for<class KernelTwo>(
           dataSize, [=](id<1> i) { accOut[i] = accTmp[i] * accIn3[i]; });
     });
 
-    // This queue.wait() causes a blocking wait for all of the kernels in the
-    // fusion list. This should lead to cancellation of the fusion.
-    q.wait();
+    fw.complete_fusion({ext::codeplay::experimental::property::no_barriers{}});
 
     assert(!fw.is_in_fusion_mode() &&
            "Queue should not be in fusion mode anymore");
-
-    fw.complete_fusion({ext::codeplay::experimental::property::no_barriers{}});
   }
 
   // Check the results
   for (size_t i = 0; i < dataSize; ++i) {
     assert(out[i] == (20 * i * i) && "Computation error");
+    assert(tmp[i] == -1 && "Not internalized");
   }
 
   return 0;
 }
-
-// CHECK: WARNING: Aborting fusion because synchronization with one of the kernels in the fusion list was requested

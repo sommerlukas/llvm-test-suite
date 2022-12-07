@@ -2,10 +2,12 @@
 // RUN: %CPU_RUN_PLACEHOLDER %t.out
 // RUN: %GPU_RUN_PLACEHOLDER %t.out
 // UNSUPPORTED: cuda || hip
+// REQUIRES: fusion
 
 // Test validity of events after cancel_fusion.
 
 #include "fusion_event_test_common.h"
+
 #include <sycl/sycl.hpp>
 
 using namespace sycl;
@@ -40,6 +42,7 @@ int main() {
   });
 
   auto kernel2 = q.submit([&](handler &cgh) {
+    cgh.depends_on(kernel1);
     cgh.parallel_for<class KernelTwo>(
         dataSize, [=](id<1> i) { out[i] = tmp[i] * in3[i]; });
   });

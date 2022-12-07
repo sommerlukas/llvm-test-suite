@@ -1,10 +1,11 @@
 // RUN: %clangxx -fsycl -fsycl-targets=%sycl_triple %s -o %t.out
-// RUN: env SYCL_RT_WARNING_LEVEL=1 %CPU_RUN_PLACEHOLDER %t.out 2>&1 | FileCheck %s
+// RUN: %CPU_RUN_PLACEHOLDER %t.out
+// RUN: %GPU_RUN_PLACEHOLDER %t.out
 // UNSUPPORTED: cuda || hip
 // REQUIRES: fusion
 
-// Test fusion cancellation on queue::wait() happening before
-// complete_fusion.
+// Test complete fusion with private internalization specified on the
+// buffer.
 
 #include <sycl/sycl.hpp>
 
@@ -28,7 +29,10 @@ int main() {
     buffer<int> bIn1{in1, range{dataSize}};
     buffer<int> bIn2{in2, range{dataSize}};
     buffer<int> bIn3{in3, range{dataSize}};
-    buffer<int> bTmp{tmp, range{dataSize}};
+    buffer<int> bTmp{
+        tmp,
+        range{dataSize},
+        {sycl::ext::codeplay::experimental::property::promote_private{}}};
     buffer<int> bOut{out, range{dataSize}};
 
     ext::codeplay::experimental::fusion_wrapper fw{q};
@@ -37,8 +41,8 @@ int main() {
     assert(fw.is_in_fusion_mode() && "Queue should be in fusion mode");
 
     q.submit([&](handler &cgh) {
-      auto accIn1 = bIn1.get_access<access::mode::read>(cgh);
-      auto accIn2 = bIn2.get_access<access::mode::read>(cgh);
+      auto accIn1 = bIn1.get_access(cgh);
+      auto accIn2 = bIn2.get_access(cgh);
       auto accTmp = bTmp.get_access(cgh);
       cgh.parallel_for<class KernelOne>(
           dataSize, [=](id<1> i) { accTmp[i] = accIn1[i] + accIn2[i]; });
@@ -52,22 +56,17 @@ int main() {
           dataSize, [=](id<1> i) { accOut[i] = accTmp[i] * accIn3[i]; });
     });
 
-    // This queue.wait() causes a blocking wait for all of the kernels in the
-    // fusion list. This should lead to cancellation of the fusion.
-    q.wait();
+    fw.complete_fusion({ext::codeplay::experimental::property::no_barriers{}});
 
     assert(!fw.is_in_fusion_mode() &&
            "Queue should not be in fusion mode anymore");
-
-    fw.complete_fusion({ext::codeplay::experimental::property::no_barriers{}});
   }
 
   // Check the results
   for (size_t i = 0; i < dataSize; ++i) {
     assert(out[i] == (20 * i * i) && "Computation error");
+    assert(tmp[i] == -1 && "Not internalized");
   }
 
   return 0;
 }
-
-// CHECK: WARNING: Aborting fusion because synchronization with one of the kernels in the fusion list was requested

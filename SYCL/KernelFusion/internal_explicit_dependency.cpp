@@ -1,10 +1,13 @@
 // RUN: %clangxx -fsycl -fsycl-targets=%sycl_triple %s -o %t.out
-// RUN: env SYCL_RT_WARNING_LEVEL=1 %CPU_RUN_PLACEHOLDER %t.out 2>&1 | FileCheck %s
+// RUN: %CPU_RUN_PLACEHOLDER %t.out
+// RUN: %GPU_RUN_PLACEHOLDER %t.out
 // UNSUPPORTED: cuda || hip
 // REQUIRES: fusion
 
-// Test fusion cancellation on an explicit memory operation on an USM pointer
-// happening before complete_fusion.
+// Test complete fusion where one kernel in the fusion list specifies an
+// explicit dependency (via events) on another kernel in the fusion list.
+
+#include "fusion_event_test_common.h"
 
 #include <sycl/sycl.hpp>
 
@@ -20,7 +23,6 @@ int main() {
   int *in3 = sycl::malloc_shared<int>(dataSize, q);
   int *tmp = sycl::malloc_shared<int>(dataSize, q);
   int *out = sycl::malloc_shared<int>(dataSize, q);
-  int dst[dataSize];
 
   for (size_t i = 0; i < dataSize; ++i) {
     in1[i] = i * 2;
@@ -28,7 +30,6 @@ int main() {
     in3[i] = i * 4;
     tmp[i] = -1;
     out[i] = -1;
-    dst[i] = -1;
   }
 
   ext::codeplay::experimental::fusion_wrapper fw{q};
@@ -42,26 +43,29 @@ int main() {
   });
 
   auto kernel2 = q.submit([&](handler &cgh) {
+    cgh.depends_on(kernel1);
     cgh.parallel_for<class KernelTwo>(
         dataSize, [=](id<1> i) { out[i] = tmp[i] * in3[i]; });
   });
 
-  // This explicit copy operation has an explicit dependency on one of the
-  // kernels and therefore requires synchronization. This should lead to
-  // cancellation of the fusion.
-  auto copyEvt = q.copy(tmp, dst, dataSize, kernel1);
-
-  copyEvt.wait();
+  auto complete = fw.complete_fusion(
+      {ext::codeplay::experimental::property::no_barriers{}});
 
   assert(!fw.is_in_fusion_mode() &&
          "Queue should not be in fusion mode anymore");
 
-  fw.complete_fusion({ext::codeplay::experimental::property::no_barriers{}});
+  complete.wait();
+  assert(isEventComplete(complete) && "Event should be complete");
+
+  kernel1.wait();
+  assert(isEventComplete(kernel1) && "Event should be complete");
+
+  kernel2.wait();
+  assert(isEventComplete(kernel2) && "Event should be complete");
 
   // Check the results
   for (size_t i = 0; i < dataSize; ++i) {
     assert(out[i] == (20 * i * i) && "Computation error");
-    assert(dst[i] == (5 * i) && "Computation error");
   }
 
   sycl::free(in1, q);
@@ -72,5 +76,3 @@ int main() {
 
   return 0;
 }
-
-// CHECK: WARNING: Aborting fusion because synchronization with one of the kernels in the fusion list was requested

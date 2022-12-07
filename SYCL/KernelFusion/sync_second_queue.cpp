@@ -1,6 +1,7 @@
 // RUN: %clangxx -fsycl -fsycl-targets=%sycl_triple %s -o %t.out
 // RUN: env SYCL_RT_WARNING_LEVEL=1 %CPU_RUN_PLACEHOLDER %t.out 2>&1 | FileCheck %s
 // UNSUPPORTED: cuda || hip
+// REQUIRES: fusion
 
 // Test fusion cancellation on submission of kernel with requirements to a
 // different queue happening before complete_fusion.
