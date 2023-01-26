@@ -279,7 +279,6 @@ SubGroup/sub_group_as.cpp
 SubGroup/sub_group_as_vec.cpp
 SubGroup/sub_groups_sycl2020.cpp
 SubGroupMask/Basic.cpp
-SubGroupMask/GroupSize.cpp
 USM/copy.cpp
 USM/fill.cpp
 USM/math.cpp
