@@ -87,7 +87,6 @@ Basic/compare_exchange_strong.cpp
 Basic/device_event.cpp
 Basic/diagnostics/non-uniform-wk-gp-test.cpp
 Basic/group_async_copy.cpp
-Basic/group_local_id.cpp
 Basic/half_builtins.cpp
 Basic/half_type.cpp
 Basic/handler/handler_mem_op.cpp
