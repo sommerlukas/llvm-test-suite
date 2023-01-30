@@ -191,7 +191,6 @@ KernelParams/array-kernel-param-run.cpp
 KernelParams/union_kernel_param.cpp
 OneapiDeviceSelector/case_sensitivity.cpp
 OptionalKernelFeatures/is_compatible.cpp
-Plugin/enqueue-arg-order-image.cpp
 Plugin/interop-level-zero-buffer-multi-dim.cpp
 Plugin/level_zero_track_indirect_access_memory.cpp
 Printf/char.cpp
