@@ -1,6 +1,9 @@
 // RUN: %clangxx -fsycl -fsycl-targets=%sycl_triple %s -o %t.out
 // RUN: %BE_RUN_PLACEHOLDER %t.out
 
+// https://github.com/intel/llvm/issues/7585 to fix the failure:
+// UNSUPPORTED: opencl
+
 // This test checks that the queue constructor throws a sycl::exception if the
 // device selected by the provided selector is not in the specified context.
 
