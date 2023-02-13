@@ -179,7 +179,6 @@ HierPar/hier_par_wgscope_O0.cpp
 HostInteropTask/host-task-two-queues.cpp
 InorderQueue/in_order_kernels.cpp
 KernelAndProgram/spec_constants_after_link.cpp
-KernelFusion/internalize_multi_ptr.cpp
 KernelFusion/jit_caching.cpp
 KernelFusion/ranged_offset_accessor.cpp
 KernelFusion/struct_with_array.cpp
