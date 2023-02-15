@@ -4,8 +4,8 @@
 // UNSUPPORTED: hip
 // REQUIRES: fusion
 
-// Test complete fusion with local internalization specified on the
-// accessors.
+// Test complete fusion with local internalization and an local accessor that
+// already exists in one of the input kernels.
 
 #include <sycl/sycl.hpp>
 
@@ -42,9 +42,14 @@ int main() {
       auto accIn2 = bIn2.get_access(cgh);
       auto accTmp = bTmp.get_access(
           cgh, sycl::ext::codeplay::experimental::property::promote_local{});
+      local_accessor<int> accLocal{16, cgh};
       cgh.parallel_for<class KernelOne>(
-          nd_range<1>{{dataSize}, {16}},
-          [=](id<1> i) { accTmp[i] = accIn1[i] + accIn2[i]; });
+          nd_range<1>{{dataSize}, {16}}, [=](nd_item<1> i) {
+            size_t globalIdx = i.get_global_linear_id();
+            size_t localIdx = i.get_local_linear_id();
+            accLocal[localIdx] = accIn2[globalIdx];
+            accTmp[globalIdx] = accIn1[globalIdx] + accLocal[localIdx];
+          });
     });
 
     q.submit([&](handler &cgh) {
