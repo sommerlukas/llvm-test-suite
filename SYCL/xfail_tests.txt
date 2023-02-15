@@ -79,6 +79,7 @@ Basic/boolean.cpp
 Basic/buffer/buffer.cpp
 Basic/built-ins.cpp
 Basic/device_event.cpp
+Basic/device_implicitly_copyable.cpp
 Basic/diagnostics/non-uniform-wk-gp-test.cpp
 Basic/group_async_copy.cpp
 Basic/half_builtins.cpp
@@ -122,6 +123,7 @@ DeviceLib/assert.cpp
 DeviceLib/built-ins/ext_native_math.cpp
 DeviceLib/built-ins/ext_native_math_fp16.cpp
 DeviceLib/built-ins/fast-math-flag.cpp
+DeviceLib/built-ins/marray_relational.cpp
 DeviceLib/built-ins/nan.cpp
 DeviceLib/built-ins/printf.cpp
 DeviceLib/built-ins/scalar_integer.cpp
@@ -157,6 +159,7 @@ HierPar/hier_par_wgscope.cpp
 HierPar/hier_par_wgscope_O0.cpp
 InorderQueue/in_order_kernels.cpp
 KernelAndProgram/spec_constants_after_link.cpp
+KernelFusion/abort_internalization_stored_ptr.cpp
 KernelFusion/different_nd_ranges.cpp
 KernelFusion/struct_with_array.cpp
 KernelParams/array-kernel-param-nested-run.cpp
@@ -171,7 +174,9 @@ Printf/int.cpp
 Printf/long.cpp
 Printf/mixed-address-space.cpp
 Printf/percent-symbol.cpp
+Properties/cache_config.cpp
 Reduction/reduction_big_data.cpp
+Reduction/reduction_complex_nums.cpp
 Reduction/reduction_internal.cpp
 Reduction/reduction_nd_N_queue_shortcut.cpp
 Reduction/reduction_nd_N_vars.cpp
