@@ -70,7 +70,6 @@ AtomicRef/xor.cpp
 AtomicRef/xor_generic.cpp
 AtomicRef/xor_generic_local.cpp
 AtomicRef/xor_local.cpp
-BFloat16/bfloat16_conversions.cpp
 BFloat16/bfloat16_type.cpp
 Basic/accessor/accessor.cpp
 Basic/accessor/device_accessor_deduction.cpp
