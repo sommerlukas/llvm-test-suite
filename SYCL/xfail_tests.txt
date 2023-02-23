@@ -179,7 +179,6 @@ Printf/long.cpp
 Printf/mixed-address-space.cpp
 Printf/percent-symbol.cpp
 Reduction/reduction_big_data.cpp
-Reduction/reduction_ctor.cpp
 Reduction/reduction_internal.cpp
 Reduction/reduction_nd_N_queue_shortcut.cpp
 Reduction/reduction_nd_N_vars.cpp
