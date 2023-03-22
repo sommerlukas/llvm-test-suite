@@ -78,7 +78,6 @@ Basic/bit_cast/bit_cast.cpp
 Basic/boolean.cpp
 Basic/buffer/buffer.cpp
 Basic/built-ins.cpp
-Basic/compare_exchange_strong.cpp
 Basic/device_event.cpp
 Basic/diagnostics/non-uniform-wk-gp-test.cpp
 Basic/group_async_copy.cpp
@@ -99,8 +98,6 @@ Basic/image/srgba-read.cpp
 Basic/multi_ptr.cpp
 Basic/multi_ptr_legacy_usm_addr_ext.cpp
 Basic/multi_ptr_usm_addr_ext.cpp
-Basic/parallel_for_disable_range_roundup.cpp
-Basic/parallel_for_range_roundup.cpp
 Basic/reqd_work_group_size.cpp
 Basic/scalar_vec_access.cpp
 Basic/span.cpp
@@ -206,7 +203,6 @@ Reduction/regression_after_pr_6343.cpp
 Regression/atomic_load.cpp
 Regression/group.cpp
 Regression/half_operators.cpp
-Regression/implicit_atomic_conversion.cpp
 Regression/implicit_kernel_bundle_image_filtering.cpp
 Regression/reduction_resource_leak_dw.cpp
 Regression/reduction_resource_leak_usm.cpp
