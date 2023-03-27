@@ -1,4 +1,5 @@
 # Table of contents
+ * [Deprecation Message](#deprecation)
  * [Overview](#overview)
  * [Prerequisites](#prerequisites)
  * [Build and run tests](#build-and-run-tests)
@@ -7,6 +8,11 @@
  * [Creating or modifying tests](#creating-or-modifying-tests)
    * [LIT feature checks](#lit-feature-checks)
    * [llvm-lit parameters](#llvm-lit-parameters)
+
+# Deprecation Message
+These tests have been merged back into https://github.com/intel/llvm and now
+reside in-tree. This repository is in archive (read-only) mode and new
+contributions are not accepted here.
 
 # Overview
 This directory contains SYCL-related tests distributed in subdirectories based
